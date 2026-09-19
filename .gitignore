@@ -1,0 +1,29 @@
+# dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# tests and tooling
+coverage/
+playwright-report/
+test-results/
+blob-report/
+*.tsbuildinfo
+
+# local configuration
+.env
+.env.local
+.env.*.local
+SESSION_CONTEXT.md
+
+# Supabase local state
+supabase/.branches/
+supabase/.temp/
+
+# editor and operating system
+.DS_Store
+.idea/
+.vscode/
+*.swp
