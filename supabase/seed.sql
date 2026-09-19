@@ -380,4 +380,107 @@ values
   ('c0000000-0000-4000-8000-000000000008', '44444444-4444-4444-8444-444444444444', now() - interval '1 day')
 on conflict do nothing;
 
+-- Organizaciones de demostracion: una liga publica y un equipo privado.
+insert into public.organizations (
+  id, slug, name, kind, access, description, website_url, location, formats, created_by, created_at
+)
+values
+  (
+    'd0000000-0000-4000-8000-000000000001', 'lliga-spellbook', 'Lliga Spellbook', 'league', 'public',
+    'Liga abierta para organizar encuentros, compartir reglas y conversar sobre Old School y formatos construidos.',
+    'https://oldschool.cat/', 'Barcelona', array['modern'], (select id from seed_target_user), now() - interval '80 days'
+  ),
+  (
+    'd0000000-0000-4000-8000-000000000002', 'equip-arcane', 'Equip Arcane', 'team', 'private',
+    'Equipo privado de pruebas, preparación de torneos y revisión conjunta de listas.',
+    null, 'Catalunya', array['commander', 'pioneer'], '11111111-1111-4111-8111-111111111111', now() - interval '45 days'
+  )
+on conflict (id) do update
+set name = excluded.name,
+    kind = excluded.kind,
+    access = excluded.access,
+    description = excluded.description,
+    website_url = excluded.website_url,
+    location = excluded.location,
+    formats = excluded.formats;
+
+insert into public.organization_members (organization_id, user_id, role, joined_at)
+select 'd0000000-0000-4000-8000-000000000001', id, 'owner', now() - interval '80 days'
+from seed_target_user
+on conflict (organization_id, user_id) do update set role = excluded.role;
+
+insert into public.organization_members (organization_id, user_id, role, joined_at)
+values
+  ('d0000000-0000-4000-8000-000000000001', '11111111-1111-4111-8111-111111111111', 'admin', now() - interval '70 days'),
+  ('d0000000-0000-4000-8000-000000000001', '22222222-2222-4222-8222-222222222222', 'member', now() - interval '63 days'),
+  ('d0000000-0000-4000-8000-000000000001', '33333333-3333-4333-8333-333333333333', 'member', now() - interval '51 days'),
+  ('d0000000-0000-4000-8000-000000000001', '44444444-4444-4444-8444-444444444444', 'member', now() - interval '39 days'),
+  ('d0000000-0000-4000-8000-000000000002', '11111111-1111-4111-8111-111111111111', 'owner', now() - interval '45 days'),
+  ('d0000000-0000-4000-8000-000000000002', '33333333-3333-4333-8333-333333333333', 'member', now() - interval '30 days')
+on conflict (organization_id, user_id) do update set role = excluded.role;
+
+insert into public.organization_join_requests (
+  id, organization_id, requester_id, message, status, created_at, updated_at
+)
+values (
+  'd1000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000002',
+  '55555555-5555-4555-8555-555555555555', 'Me gustaría participar en las sesiones de pruebas de Pioneer.',
+  'pending', now() - interval '1 day', now() - interval '1 day'
+)
+on conflict (id) do update set message = excluded.message, status = excluded.status, reviewed_by = null, reviewed_at = null;
+
+insert into public.organization_forum_topics (
+  id, organization_id, author_id, title, body, is_pinned, last_activity_at, created_at, updated_at
+)
+values
+  (
+    'e0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000001',
+    '11111111-1111-4111-8111-111111111111', 'Presentaciones y primeras partidas',
+    'Usa este tema para presentarte, contar qué formatos juegas y encontrar mesa para la próxima jornada.', true,
+    now() - interval '5 hours', now() - interval '20 days', now() - interval '20 days'
+  ),
+  (
+    'e0000000-0000-4000-8000-000000000002', 'd0000000-0000-4000-8000-000000000001',
+    '22222222-2222-4222-8222-222222222222', 'Preparación del encuentro mensual',
+    '¿Qué mazos queréis probar y cuántas rondas os gustaría jugar este mes?', false,
+    now() - interval '2 hours', now() - interval '3 days', now() - interval '3 days'
+  ),
+  (
+    'e0000000-0000-4000-8000-000000000003', 'd0000000-0000-4000-8000-000000000002',
+    '33333333-3333-4333-8333-333333333333', 'Banco de pruebas de Pioneer',
+    'Dejad aquí los emparejamientos que queréis preparar esta semana.', false,
+    now() - interval '1 day', now() - interval '8 days', now() - interval '8 days'
+  )
+on conflict (id) do update set title = excluded.title, body = excluded.body, is_pinned = excluded.is_pinned;
+
+insert into public.organization_forum_messages (id, topic_id, author_id, body, created_at, updated_at)
+values
+  ('f0000000-0000-4000-8000-000000000001', 'e0000000-0000-4000-8000-000000000001', '33333333-3333-4333-8333-333333333333', 'Juego Commander y me gustaría probar Old School con proxies.', now() - interval '5 hours', now() - interval '5 hours'),
+  ('f0000000-0000-4000-8000-000000000002', 'e0000000-0000-4000-8000-000000000002', '44444444-4444-4444-8444-444444444444', 'Yo puedo llevar dos barajas y ayudar con las rondas.', now() - interval '2 hours', now() - interval '2 hours')
+on conflict (id) do update set body = excluded.body;
+
+insert into public.organization_announcements (
+  id, organization_id, author_id, title, body, is_pinned, published_at, created_at, updated_at
+)
+values
+  (
+    'a1000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000001',
+    '11111111-1111-4111-8111-111111111111', 'Próxima jornada abierta',
+    'Nos encontraremos el sábado a las 10:00. Traed una lista, dados y ganas de compartir partidas.', true,
+    now() - interval '1 day', now() - interval '1 day', now() - interval '1 day'
+  ),
+  (
+    'a1000000-0000-4000-8000-000000000002', 'd0000000-0000-4000-8000-000000000001',
+    '11111111-1111-4111-8111-111111111111', 'Normas de convivencia',
+    'Confirmad el nivel de las listas antes de empezar y avisad a organización ante cualquier incidencia.', false,
+    now() - interval '10 days', now() - interval '10 days', now() - interval '10 days'
+  ),
+  (
+    'a1000000-0000-4000-8000-000000000003', 'd0000000-0000-4000-8000-000000000002',
+    '11111111-1111-4111-8111-111111111111', 'Sesión privada del jueves',
+    'Revisaremos banquillos y jugaremos dos rondas cronometradas.', true,
+    now() - interval '2 days', now() - interval '2 days', now() - interval '2 days'
+  )
+on conflict (id) do update set title = excluded.title, body = excluded.body, is_pinned = excluded.is_pinned;
+
 commit;

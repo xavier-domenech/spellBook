@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BookOpenText, Home, Layers3, Users } from "lucide-react";
+import { BookOpenText, Building2, Home, Layers3, Users } from "lucide-react";
 import { AccountButton } from "@/components/account-button";
 import { hasSupabaseEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
@@ -19,6 +19,7 @@ const navigation = [
   { href: "/feed", label: "Inicio", icon: Home },
   { href: "/decks", label: "Decklists", icon: Layers3 },
   { href: "/users", label: "Jugadores", icon: Users },
+  { href: "/organizations", label: "Organizaciones", icon: Building2 },
 ];
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -42,7 +43,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   }
 
   return (
-    <html lang="es">
+    <html data-scroll-behavior="smooth" lang="es">
       <body>
         <header className="site-header">
           <div className="header-inner">
