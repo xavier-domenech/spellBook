@@ -1,0 +1,601 @@
+create type public.organization_kind as enum ('league', 'team', 'club', 'store', 'community');
+create type public.organization_access as enum ('public', 'private');
+create type public.organization_member_role as enum ('owner', 'admin', 'member');
+create type public.organization_request_status as enum ('pending', 'approved', 'rejected', 'cancelled');
+create type public.organization_content_status as enum ('published', 'hidden');
+
+create table public.organizations (
+  id uuid primary key default gen_random_uuid(),
+  slug extensions.citext not null unique check (slug ~ '^[a-z0-9][a-z0-9-]{2,49}$'),
+  name text not null check (char_length(name) between 3 and 80),
+  kind public.organization_kind not null,
+  access public.organization_access not null default 'public',
+  description text not null default '' check (char_length(description) <= 1000),
+  avatar_url text check (avatar_url is null or char_length(avatar_url) <= 500),
+  banner_url text check (banner_url is null or char_length(banner_url) <= 500),
+  website_url text check (
+    website_url is null
+    or (char_length(website_url) <= 500 and website_url ~ '^https?://')
+  ),
+  location text check (location is null or char_length(location) <= 120),
+  formats text[] not null default '{}',
+  created_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  archived_at timestamptz,
+  check (formats <@ array['commander', 'standard', 'modern', 'pioneer']::text[]),
+  check (cardinality(formats) <= 4)
+);
+
+create table public.organization_members (
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  role public.organization_member_role not null default 'member',
+  joined_at timestamptz not null default now(),
+  invited_by uuid references public.profiles(id) on delete set null,
+  primary key (organization_id, user_id)
+);
+
+create table public.organization_join_requests (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  requester_id uuid not null references public.profiles(id) on delete cascade,
+  message text not null default '' check (char_length(message) <= 500),
+  status public.organization_request_status not null default 'pending',
+  reviewed_by uuid references public.profiles(id) on delete set null,
+  reviewed_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (
+    (status = 'pending' and reviewed_at is null and reviewed_by is null)
+    or status = 'cancelled'
+    or (status in ('approved', 'rejected') and reviewed_at is not null and reviewed_by is not null)
+  )
+);
+
+create unique index organization_join_requests_pending_idx
+on public.organization_join_requests (organization_id, requester_id)
+where status = 'pending';
+
+create table public.organization_forum_topics (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  author_id uuid references public.profiles(id) on delete set null,
+  title text not null check (char_length(title) between 3 and 120),
+  body text not null check (char_length(body) between 1 and 5000),
+  status public.organization_content_status not null default 'published',
+  is_pinned boolean not null default false,
+  is_locked boolean not null default false,
+  last_activity_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table public.organization_forum_messages (
+  id uuid primary key default gen_random_uuid(),
+  topic_id uuid not null references public.organization_forum_topics(id) on delete cascade,
+  author_id uuid references public.profiles(id) on delete set null,
+  reply_to_id uuid references public.organization_forum_messages(id) on delete set null,
+  body text not null check (char_length(body) between 1 and 5000),
+  status public.organization_content_status not null default 'published',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table public.organization_announcements (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  author_id uuid references public.profiles(id) on delete set null,
+  title text not null check (char_length(title) between 3 and 120),
+  body text not null check (char_length(body) between 1 and 5000),
+  is_pinned boolean not null default false,
+  published_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table public.organization_audit_log (
+  id bigint generated by default as identity primary key,
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  actor_id uuid references public.profiles(id) on delete set null,
+  action text not null check (char_length(action) between 3 and 80),
+  target_user_id uuid references public.profiles(id) on delete set null,
+  metadata jsonb not null default '{}',
+  created_at timestamptz not null default now()
+);
+
+create index organizations_directory_idx on public.organizations (kind, access, created_at desc) where archived_at is null;
+create index organization_members_user_idx on public.organization_members (user_id, joined_at desc);
+create index organization_members_role_idx on public.organization_members (organization_id, role);
+create index organization_requests_queue_idx on public.organization_join_requests (organization_id, status, created_at);
+create index organization_topics_activity_idx on public.organization_forum_topics (organization_id, is_pinned desc, last_activity_at desc);
+create index organization_messages_topic_idx on public.organization_forum_messages (topic_id, created_at, id);
+create index organization_announcements_idx on public.organization_announcements (organization_id, is_pinned desc, published_at desc);
+create index organization_audit_idx on public.organization_audit_log (organization_id, created_at desc);
+
+create trigger organizations_set_updated_at before update on public.organizations
+for each row execute function public.set_updated_at();
+create trigger organization_requests_set_updated_at before update on public.organization_join_requests
+for each row execute function public.set_updated_at();
+create trigger organization_topics_set_updated_at before update on public.organization_forum_topics
+for each row execute function public.set_updated_at();
+create trigger organization_messages_set_updated_at before update on public.organization_forum_messages
+for each row execute function public.set_updated_at();
+create trigger organization_announcements_set_updated_at before update on public.organization_announcements
+for each row execute function public.set_updated_at();
+
+create function public.is_organization_member(p_organization_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.organization_members membership
+    where membership.organization_id = p_organization_id
+      and membership.user_id = (select auth.uid())
+  );
+$$;
+
+create function public.has_organization_role(
+  p_organization_id uuid,
+  p_roles public.organization_member_role[]
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.organization_members membership
+    where membership.organization_id = p_organization_id
+      and membership.user_id = (select auth.uid())
+      and membership.role = any(p_roles)
+  );
+$$;
+
+create function public.create_organization(
+  p_name text,
+  p_slug text,
+  p_kind public.organization_kind,
+  p_access public.organization_access,
+  p_description text default '',
+  p_website_url text default null,
+  p_location text default null,
+  p_formats text[] default '{}'
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  actor uuid := (select auth.uid());
+  organization_id uuid;
+begin
+  if actor is null then raise exception 'Authentication required'; end if;
+  if (select count(*) from public.organizations where created_by = actor and archived_at is null) >= 3 then
+    raise exception 'Organization creation limit reached';
+  end if;
+
+  insert into public.organizations (name, slug, kind, access, description, website_url, location, formats, created_by)
+  values (
+    trim(p_name), lower(trim(p_slug)), p_kind, p_access, trim(coalesce(p_description, '')),
+    nullif(trim(coalesce(p_website_url, '')), ''), nullif(trim(coalesce(p_location, '')), ''), coalesce(p_formats, '{}'), actor
+  )
+  returning id into organization_id;
+
+  insert into public.organization_members (organization_id, user_id, role)
+  values (organization_id, actor, 'owner');
+  insert into public.organization_audit_log (organization_id, actor_id, action)
+  values (organization_id, actor, 'organization_created');
+  return organization_id;
+end;
+$$;
+
+create function public.join_public_organization(p_organization_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare actor uuid := (select auth.uid());
+begin
+  if actor is null then raise exception 'Authentication required'; end if;
+  if not exists (
+    select 1 from public.organizations
+    where id = p_organization_id and access = 'public' and archived_at is null
+  ) then raise exception 'Organization is not open'; end if;
+
+  insert into public.organization_members (organization_id, user_id, role)
+  values (p_organization_id, actor, 'member')
+  on conflict do nothing;
+  if not found then return; end if;
+  update public.organization_join_requests
+  set status = 'cancelled', updated_at = now()
+  where organization_id = p_organization_id and requester_id = actor and status = 'pending';
+  insert into public.organization_audit_log (organization_id, actor_id, action, target_user_id)
+  values (p_organization_id, actor, 'member_joined', actor);
+end;
+$$;
+
+create function public.request_organization_access(p_organization_id uuid, p_message text default '')
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  actor uuid := (select auth.uid());
+  request_id uuid;
+begin
+  if actor is null then raise exception 'Authentication required'; end if;
+  if not exists (
+    select 1 from public.organizations
+    where id = p_organization_id and access = 'private' and archived_at is null
+  ) then raise exception 'Organization does not require approval'; end if;
+  if exists (
+    select 1 from public.organization_members
+    where organization_id = p_organization_id and user_id = actor
+  ) then raise exception 'Already a member'; end if;
+  if exists (
+    select 1 from public.organization_join_requests
+    where organization_id = p_organization_id and requester_id = actor
+      and status = 'rejected' and reviewed_at > now() - interval '7 days'
+  ) then raise exception 'Wait before requesting access again'; end if;
+
+  select id into request_id from public.organization_join_requests
+  where organization_id = p_organization_id and requester_id = actor and status = 'pending';
+  if request_id is not null then return request_id; end if;
+
+  insert into public.organization_join_requests (organization_id, requester_id, message)
+  values (p_organization_id, actor, trim(coalesce(p_message, '')))
+  returning id into request_id;
+  return request_id;
+end;
+$$;
+
+create function public.cancel_organization_request(p_request_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  update public.organization_join_requests
+  set status = 'cancelled', updated_at = now()
+  where id = p_request_id and requester_id = (select auth.uid()) and status = 'pending';
+  if not found then raise exception 'Pending request not found'; end if;
+end;
+$$;
+
+create function public.review_organization_request(p_request_id uuid, p_approve boolean)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  actor uuid := (select auth.uid());
+  request_row public.organization_join_requests%rowtype;
+begin
+  select * into request_row from public.organization_join_requests where id = p_request_id for update;
+  if request_row.id is null or request_row.status <> 'pending' then raise exception 'Pending request not found'; end if;
+  if not public.has_organization_role(request_row.organization_id, array['owner', 'admin']::public.organization_member_role[])
+    and not public.is_admin() then raise exception 'Not allowed'; end if;
+
+  if p_approve then
+    insert into public.organization_members (organization_id, user_id, role, invited_by)
+    values (request_row.organization_id, request_row.requester_id, 'member', actor)
+    on conflict do nothing;
+  end if;
+  update public.organization_join_requests
+  set status = case when p_approve then 'approved'::public.organization_request_status else 'rejected'::public.organization_request_status end,
+      reviewed_by = actor, reviewed_at = now(), updated_at = now()
+  where id = p_request_id;
+  insert into public.organization_audit_log (organization_id, actor_id, action, target_user_id)
+  values (
+    request_row.organization_id, actor,
+    case when p_approve then 'request_approved' else 'request_rejected' end,
+    request_row.requester_id
+  );
+end;
+$$;
+
+create function public.change_organization_member_role(
+  p_organization_id uuid,
+  p_user_id uuid,
+  p_role public.organization_member_role
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare target_current_role public.organization_member_role;
+begin
+  if not public.has_organization_role(p_organization_id, array['owner']::public.organization_member_role[])
+    and not public.is_admin() then raise exception 'Owner access required'; end if;
+  select role into target_current_role from public.organization_members
+  where organization_id = p_organization_id and user_id = p_user_id for update;
+  if target_current_role is null then raise exception 'Member not found'; end if;
+  if target_current_role = 'owner' and p_role <> 'owner'
+    and (select count(*) from public.organization_members where organization_id = p_organization_id and role = 'owner') <= 1
+  then raise exception 'The last owner cannot be demoted'; end if;
+
+  update public.organization_members set role = p_role
+  where organization_id = p_organization_id and user_id = p_user_id;
+  insert into public.organization_audit_log (organization_id, actor_id, action, target_user_id, metadata)
+  values (p_organization_id, (select auth.uid()), 'member_role_changed', p_user_id, jsonb_build_object('role', p_role));
+end;
+$$;
+
+create function public.leave_organization(p_organization_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  actor uuid := (select auth.uid());
+  actor_role public.organization_member_role;
+begin
+  select role into actor_role from public.organization_members
+  where organization_id = p_organization_id and user_id = actor for update;
+  if actor_role is null then raise exception 'Membership not found'; end if;
+  if actor_role = 'owner'
+    and (select count(*) from public.organization_members where organization_id = p_organization_id and role = 'owner') <= 1
+  then raise exception 'Transfer ownership before leaving'; end if;
+  delete from public.organization_members where organization_id = p_organization_id and user_id = actor;
+  insert into public.organization_audit_log (organization_id, actor_id, action, target_user_id)
+  values (p_organization_id, actor, 'member_left', actor);
+end;
+$$;
+
+create function public.remove_organization_member(p_organization_id uuid, p_user_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  actor_role public.organization_member_role;
+  target_role public.organization_member_role;
+begin
+  select role into actor_role from public.organization_members
+  where organization_id = p_organization_id and user_id = (select auth.uid());
+  if not public.is_admin() and (actor_role is null or actor_role not in ('owner', 'admin')) then
+    raise exception 'Admin access required';
+  end if;
+  select role into target_role from public.organization_members
+  where organization_id = p_organization_id and user_id = p_user_id for update;
+  if target_role is null then raise exception 'Member not found'; end if;
+  if target_role in ('owner', 'admin') and actor_role <> 'owner' and not public.is_admin() then
+    raise exception 'Only owners can remove administrators';
+  end if;
+  if target_role = 'owner'
+    and (select count(*) from public.organization_members where organization_id = p_organization_id and role = 'owner') <= 1
+  then raise exception 'The last owner cannot be removed'; end if;
+
+  delete from public.organization_members where organization_id = p_organization_id and user_id = p_user_id;
+  insert into public.organization_audit_log (organization_id, actor_id, action, target_user_id)
+  values (p_organization_id, (select auth.uid()), 'member_removed', p_user_id);
+end;
+$$;
+
+create function public.moderate_organization_topic(p_topic_id uuid, p_action text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare organization_id uuid;
+begin
+  select topic.organization_id into organization_id from public.organization_forum_topics topic where topic.id = p_topic_id;
+  if organization_id is null then raise exception 'Topic not found'; end if;
+  if not public.has_organization_role(organization_id, array['owner', 'admin']::public.organization_member_role[])
+    and not public.is_admin() then raise exception 'Admin access required'; end if;
+  if p_action = 'pin' then update public.organization_forum_topics set is_pinned = true where id = p_topic_id;
+  elsif p_action = 'unpin' then update public.organization_forum_topics set is_pinned = false where id = p_topic_id;
+  elsif p_action = 'lock' then update public.organization_forum_topics set is_locked = true where id = p_topic_id;
+  elsif p_action = 'unlock' then update public.organization_forum_topics set is_locked = false where id = p_topic_id;
+  elsif p_action = 'hide' then update public.organization_forum_topics set status = 'hidden' where id = p_topic_id;
+  elsif p_action = 'restore' then update public.organization_forum_topics set status = 'published' where id = p_topic_id;
+  else raise exception 'Unknown moderation action'; end if;
+  insert into public.organization_audit_log (organization_id, actor_id, action, metadata)
+  values (organization_id, (select auth.uid()), 'topic_moderated', jsonb_build_object('topic_id', p_topic_id, 'action', p_action));
+end;
+$$;
+
+create function public.touch_organization_topic_activity()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  update public.organization_forum_topics set last_activity_at = new.created_at where id = new.topic_id;
+  return new;
+end;
+$$;
+
+create trigger organization_messages_touch_topic
+after insert on public.organization_forum_messages
+for each row execute function public.touch_organization_topic_activity();
+
+alter table public.organizations enable row level security;
+alter table public.organization_members enable row level security;
+alter table public.organization_join_requests enable row level security;
+alter table public.organization_forum_topics enable row level security;
+alter table public.organization_forum_messages enable row level security;
+alter table public.organization_announcements enable row level security;
+alter table public.organization_audit_log enable row level security;
+
+create policy "active organizations are discoverable" on public.organizations for select
+using (archived_at is null);
+create policy "organization admins update settings" on public.organizations for update to authenticated
+using (
+  public.has_organization_role(id, array['owner', 'admin']::public.organization_member_role[])
+  or public.is_admin()
+)
+with check (
+  public.has_organization_role(id, array['owner', 'admin']::public.organization_member_role[])
+  or public.is_admin()
+);
+
+create policy "public organization memberships are readable" on public.organization_members for select
+using (exists (
+  select 1 from public.organizations organization
+  where organization.id = organization_id and organization.access = 'public' and organization.archived_at is null
+));
+create policy "members read private organization memberships" on public.organization_members for select to authenticated
+using (public.is_organization_member(organization_id) or public.is_admin());
+
+create policy "users read own organization requests" on public.organization_join_requests for select to authenticated
+using (requester_id = (select auth.uid()));
+create policy "organization admins read requests" on public.organization_join_requests for select to authenticated
+using (
+  public.has_organization_role(organization_id, array['owner', 'admin']::public.organization_member_role[])
+  or public.is_admin()
+);
+
+create policy "public organization topics are readable" on public.organization_forum_topics for select
+using (
+  status = 'published' and exists (
+    select 1 from public.organizations organization
+    where organization.id = organization_id and organization.access = 'public' and organization.archived_at is null
+  )
+);
+create policy "members read organization topics" on public.organization_forum_topics for select to authenticated
+using (
+  public.is_admin()
+  or (
+    public.is_organization_member(organization_id)
+    and (
+      status = 'published'
+      or author_id = (select auth.uid())
+      or public.has_organization_role(organization_id, array['owner', 'admin']::public.organization_member_role[])
+    )
+  )
+);
+create policy "members create organization topics" on public.organization_forum_topics for insert to authenticated
+with check (author_id = (select auth.uid()) and public.is_organization_member(organization_id));
+create policy "authors update organization topics" on public.organization_forum_topics for update to authenticated
+using (author_id = (select auth.uid()) and status = 'published')
+with check (author_id = (select auth.uid()));
+
+create policy "public organization messages are readable" on public.organization_forum_messages for select
+using (
+  status = 'published' and exists (
+    select 1 from public.organization_forum_topics topic
+    join public.organizations organization on organization.id = topic.organization_id
+    where topic.id = topic_id and topic.status = 'published'
+      and organization.access = 'public' and organization.archived_at is null
+  )
+);
+create policy "members read organization messages" on public.organization_forum_messages for select to authenticated
+using (exists (
+  select 1 from public.organization_forum_topics topic
+  where topic.id = topic_id and (
+    public.is_admin()
+    or (
+      public.is_organization_member(topic.organization_id)
+      and (
+        organization_forum_messages.status = 'published'
+        or organization_forum_messages.author_id = (select auth.uid())
+        or public.has_organization_role(topic.organization_id, array['owner', 'admin']::public.organization_member_role[])
+      )
+    )
+  )
+));
+create policy "members create organization messages" on public.organization_forum_messages for insert to authenticated
+with check (
+  author_id = (select auth.uid()) and exists (
+    select 1 from public.organization_forum_topics topic
+    where topic.id = topic_id and topic.status = 'published' and not topic.is_locked
+      and public.is_organization_member(topic.organization_id)
+  )
+);
+create policy "authors update organization messages" on public.organization_forum_messages for update to authenticated
+using (author_id = (select auth.uid()) and status = 'published')
+with check (author_id = (select auth.uid()));
+
+create policy "public organization announcements are readable" on public.organization_announcements for select
+using (exists (
+  select 1 from public.organizations organization
+  where organization.id = organization_id and organization.access = 'public' and organization.archived_at is null
+));
+create policy "members read private organization announcements" on public.organization_announcements for select to authenticated
+using (public.is_organization_member(organization_id) or public.is_admin());
+create policy "organization admins create announcements" on public.organization_announcements for insert to authenticated
+with check (
+  author_id = (select auth.uid()) and (
+    public.has_organization_role(organization_id, array['owner', 'admin']::public.organization_member_role[])
+    or public.is_admin()
+  )
+);
+create policy "organization admins update announcements" on public.organization_announcements for update to authenticated
+using (
+  public.has_organization_role(organization_id, array['owner', 'admin']::public.organization_member_role[])
+  or public.is_admin()
+)
+with check (
+  public.has_organization_role(organization_id, array['owner', 'admin']::public.organization_member_role[])
+  or public.is_admin()
+);
+create policy "organization admins delete announcements" on public.organization_announcements for delete to authenticated
+using (
+  public.has_organization_role(organization_id, array['owner', 'admin']::public.organization_member_role[])
+  or public.is_admin()
+);
+
+create policy "organization admins read audit log" on public.organization_audit_log for select to authenticated
+using (
+  public.has_organization_role(organization_id, array['owner', 'admin']::public.organization_member_role[])
+  or public.is_admin()
+);
+
+revoke all on public.organizations, public.organization_members, public.organization_join_requests,
+  public.organization_forum_topics, public.organization_forum_messages, public.organization_announcements,
+  public.organization_audit_log from anon, authenticated;
+revoke all on sequence public.organization_audit_log_id_seq from anon, authenticated;
+
+grant select on public.organizations, public.organization_members, public.organization_forum_topics,
+  public.organization_forum_messages, public.organization_announcements to anon, authenticated;
+grant select on public.organization_join_requests, public.organization_audit_log to authenticated;
+grant update (name, slug, kind, access, description, website_url, location, formats)
+  on public.organizations to authenticated;
+grant insert (organization_id, author_id, title, body) on public.organization_forum_topics to authenticated;
+grant insert (topic_id, author_id, reply_to_id, body) on public.organization_forum_messages to authenticated;
+grant insert on public.organization_announcements to authenticated;
+grant update (title, body) on public.organization_forum_topics to authenticated;
+grant update (body) on public.organization_forum_messages to authenticated;
+grant update (title, body, is_pinned, published_at), delete on public.organization_announcements to authenticated;
+grant usage, select on sequence public.organization_audit_log_id_seq to authenticated;
+
+revoke all on function public.is_organization_member(uuid) from public, anon;
+revoke all on function public.has_organization_role(uuid, public.organization_member_role[]) from public, anon;
+revoke all on function public.create_organization(text, text, public.organization_kind, public.organization_access, text, text, text, text[]) from public, anon;
+revoke all on function public.join_public_organization(uuid) from public, anon;
+revoke all on function public.request_organization_access(uuid, text) from public, anon;
+revoke all on function public.cancel_organization_request(uuid) from public, anon;
+revoke all on function public.review_organization_request(uuid, boolean) from public, anon;
+revoke all on function public.change_organization_member_role(uuid, uuid, public.organization_member_role) from public, anon;
+revoke all on function public.leave_organization(uuid) from public, anon;
+revoke all on function public.remove_organization_member(uuid, uuid) from public, anon;
+revoke all on function public.moderate_organization_topic(uuid, text) from public, anon;
+revoke all on function public.touch_organization_topic_activity() from public, anon, authenticated;
+
+grant execute on function public.is_organization_member(uuid) to authenticated;
+grant execute on function public.has_organization_role(uuid, public.organization_member_role[]) to authenticated;
+grant execute on function public.create_organization(text, text, public.organization_kind, public.organization_access, text, text, text, text[]) to authenticated;
+grant execute on function public.join_public_organization(uuid) to authenticated;
+grant execute on function public.request_organization_access(uuid, text) to authenticated;
+grant execute on function public.cancel_organization_request(uuid) to authenticated;
+grant execute on function public.review_organization_request(uuid, boolean) to authenticated;
+grant execute on function public.change_organization_member_role(uuid, uuid, public.organization_member_role) to authenticated;
+grant execute on function public.leave_organization(uuid) to authenticated;
+grant execute on function public.remove_organization_member(uuid, uuid) to authenticated;
+grant execute on function public.moderate_organization_topic(uuid, text) to authenticated;
