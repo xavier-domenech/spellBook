@@ -443,6 +443,25 @@ button { cursor: pointer; }
 .admin-format-usage span { padding: 5px 8px; border-radius: 999px; color: var(--muted); background: rgb(40 91 69 / 7%); font-size: .66rem; font-weight: 750; }
 .admin-format-actions form { margin: 0; }
 .admin-format-actions button:disabled { cursor: not-allowed; opacity: .48; }
+.admin-user-invite-form { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end; padding: 18px; }
+.admin-user-invite-form .field { margin: 0; }
+.admin-user-filters { display: grid; grid-template-columns: minmax(260px, 1fr) 200px auto; gap: 10px; margin-bottom: 18px; }
+.admin-user-list { display: grid; gap: 16px; }
+.admin-user-card { padding: 20px; border: 1px solid var(--line); border-radius: 15px; background: rgb(252 250 244 / 92%); }
+.admin-user-card > header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.admin-user-identity, .admin-user-badges { display: flex; align-items: center; gap: 10px; }
+.admin-user-identity h3 { margin: 0 0 3px; font: 700 1.2rem Georgia, serif; }
+.admin-user-identity p { margin: 0; color: var(--muted); font-size: .72rem; }
+.admin-user-role { display: inline-flex; align-items: center; gap: 4px; color: var(--plum); background: rgb(95 60 98 / 10%); }
+.admin-user-status-active { color: var(--green); background: rgb(40 91 69 / 10%); }
+.admin-user-status-pending { color: #765719; background: #f5e8bf; }
+.admin-user-status-suspended { color: #8a3f38; background: rgb(138 63 56 / 10%); }
+.admin-user-profile-form { display: grid; grid-template-columns: minmax(150px, .7fr) minmax(150px, .7fr) minmax(240px, 1.6fr) auto; gap: 12px; align-items: end; }
+.admin-user-profile-form .field { margin: 0; }
+.admin-user-profile-form .textarea-short { min-height: 45px; height: 45px; resize: vertical; }
+.admin-user-card > footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 16px; margin-top: 18px; border-top: 1px solid var(--line); }
+.admin-user-actions, .admin-user-actions form { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin: 0; }
+.admin-user-moderation .input { width: 150px; height: 36px; font-size: .7rem; }
 
 .creator-section { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); }
 .creator-section h2 { margin: 0; font: 700 1.2rem Georgia, serif; }
@@ -582,6 +601,8 @@ button { cursor: pointer; }
   .admin-archetype-form { grid-template-columns: 1fr 1fr; }
   .admin-description-field { grid-column: 1 / -1; }
   .admin-format-form { grid-template-columns: 1fr 1fr; }
+  .admin-user-profile-form { grid-template-columns: 1fr 1fr; }
+  .admin-user-bio { grid-column: 1 / -1; }
   .admin-format-wide { grid-column: 1 / -1; }
   .organization-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .organization-filters { grid-template-columns: minmax(220px, 1fr) 170px 170px; }
@@ -612,6 +633,10 @@ button { cursor: pointer; }
   .admin-format-form { grid-template-columns: 1fr; }
   .admin-format-wide { grid-column: auto; }
   .admin-format-card > header, .admin-format-card > footer { align-items: flex-start; flex-direction: column; }
+  .admin-user-invite-form, .admin-user-filters, .admin-user-profile-form { grid-template-columns: 1fr; }
+  .admin-user-bio { grid-column: auto; }
+  .admin-user-card > header, .admin-user-card > footer { align-items: flex-start; flex-direction: column; }
+  .admin-user-actions { align-items: stretch; flex-direction: column; width: 100%; }
   .admin-format-actions { width: 100%; }
   .hero h1 { font-size: clamp(2.8rem, 15vw, 4.6rem); }
   .hero-card { min-height: 390px; }
