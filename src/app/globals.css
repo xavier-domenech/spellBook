@@ -462,6 +462,27 @@ button { cursor: pointer; }
 .admin-user-card > footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 16px; margin-top: 18px; border-top: 1px solid var(--line); }
 .admin-user-actions, .admin-user-actions form { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin: 0; }
 .admin-user-moderation .input { width: 150px; height: 36px; font-size: .7rem; }
+.admin-organization-filters { display: grid; grid-template-columns: minmax(250px, 1fr) 180px 180px auto; gap: 10px; margin-bottom: 18px; }
+.admin-organization-list { display: grid; gap: 16px; }
+.admin-organization-card { padding: 20px; border: 1px solid var(--line); border-radius: 15px; background: rgb(252 250 244 / 92%); }
+.admin-organization-card > header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.admin-organization-card > header > div:first-child { display: flex; align-items: center; gap: 10px; }
+.admin-organization-card h3 { margin: 0 0 3px; font: 700 1.2rem Georgia, serif; }
+.admin-organization-card header p { margin: 0; color: var(--muted); font-size: .7rem; }
+.admin-organization-card header code { color: var(--green); }
+.admin-organization-card header a { display: inline-grid; place-items: center; color: var(--green); }
+.admin-organization-form { display: grid; grid-template-columns: repeat(5, minmax(120px, 1fr)); gap: 12px; align-items: end; }
+.admin-organization-create-form { padding: 18px; }
+.admin-organization-form .field { margin: 0; }
+.admin-organization-description { grid-column: span 3; }
+.admin-organization-formats { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
+.admin-organization-formats legend { padding: 0 4px; color: var(--muted); font-size: .67rem; font-weight: 800; }
+.admin-organization-formats label { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: .68rem; }
+.admin-organization-formats input { accent-color: var(--green); }
+.admin-organization-card > footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 16px; margin-top: 18px; border-top: 1px solid var(--line); }
+.admin-organization-actions, .admin-organization-actions form { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin: 0; }
+.admin-organization-actions .select { width: 125px; height: 36px; font-size: .68rem; }
+.admin-organization-actions .input { width: 140px; height: 36px; font-size: .68rem; }
 
 .creator-section { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); }
 .creator-section h2 { margin: 0; font: 700 1.2rem Georgia, serif; }
@@ -603,6 +624,9 @@ button { cursor: pointer; }
   .admin-format-form { grid-template-columns: 1fr 1fr; }
   .admin-user-profile-form { grid-template-columns: 1fr 1fr; }
   .admin-user-bio { grid-column: 1 / -1; }
+  .admin-organization-form { grid-template-columns: 1fr 1fr; }
+  .admin-organization-description { grid-column: 1 / -1; }
+  .admin-organization-filters { grid-template-columns: 1fr 1fr; }
   .admin-format-wide { grid-column: 1 / -1; }
   .organization-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .organization-filters { grid-template-columns: minmax(220px, 1fr) 170px 170px; }
@@ -637,6 +661,10 @@ button { cursor: pointer; }
   .admin-user-bio { grid-column: auto; }
   .admin-user-card > header, .admin-user-card > footer { align-items: flex-start; flex-direction: column; }
   .admin-user-actions { align-items: stretch; flex-direction: column; width: 100%; }
+  .admin-organization-filters, .admin-organization-form { grid-template-columns: 1fr; }
+  .admin-organization-description { grid-column: auto; }
+  .admin-organization-card > header, .admin-organization-card > footer { align-items: flex-start; flex-direction: column; }
+  .admin-organization-actions { align-items: stretch; flex-direction: column; width: 100%; }
   .admin-format-actions { width: 100%; }
   .hero h1 { font-size: clamp(2.8rem, 15vw, 4.6rem); }
   .hero-card { min-height: 390px; }
