@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Search, UserCheck, UserPlus, Users } from "lucide-react";
 import { toggleFollow } from "@/features/social/actions";
-import { magicFormatSchema, userSearchSchema } from "@/features/social/schemas";
+import { formatSlugSchema } from "@/features/formats/schemas";
+import { loadFormats } from "@/features/formats/data";
+import { userSearchSchema } from "@/features/social/schemas";
 import { hasSupabaseEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -24,14 +26,6 @@ type ProfileRow = {
   followers: Array<{ count: number }>;
 };
 
-const formats = magicFormatSchema.options;
-const formatLabels: Record<(typeof formats)[number], string> = {
-  commander: "Commander",
-  standard: "Standard",
-  modern: "Modern",
-  pioneer: "Pioneer",
-};
-
 function usersHref(query: string, format?: string) {
   const params = new URLSearchParams();
   if (query) params.set("q", query);
@@ -41,15 +35,16 @@ function usersHref(query: string, format?: string) {
 }
 
 export default async function UsersPage({ searchParams }: UsersPageProps) {
-  const resolvedSearchParams = await searchParams;
+  const [resolvedSearchParams, formats] = await Promise.all([searchParams, loadFormats()]);
+  const formatLabels = new Map(formats.map((format) => [format.slug, format.name]));
   const rawQuery = resolvedSearchParams.q;
   const queryValue = Array.isArray(rawQuery) ? rawQuery[0] : rawQuery ?? "";
   const parsedQuery = userSearchSchema.safeParse(queryValue);
   const searchTerm = parsedQuery.success ? parsedQuery.data : "";
   const invalidSearch = Boolean(queryValue && !parsedQuery.success);
   const rawFormat = Array.isArray(resolvedSearchParams.format) ? resolvedSearchParams.format[0] : resolvedSearchParams.format;
-  const parsedFormat = magicFormatSchema.safeParse(rawFormat);
-  const selectedFormat = parsedFormat.success ? parsedFormat.data : null;
+  const parsedFormat = formatSlugSchema.safeParse(rawFormat);
+  const selectedFormat = parsedFormat.success && formatLabels.has(parsedFormat.data) ? parsedFormat.data : null;
   const configured = hasSupabaseEnv();
   let profiles: ProfileRow[] = [];
   let viewerId: string | null = null;
@@ -108,8 +103,8 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
         <span>Formato favorito</span>
         <Link className={!selectedFormat ? "active" : ""} href={usersHref(searchTerm)}>Todos</Link>
         {formats.map((format) => (
-          <Link className={selectedFormat === format ? "active" : ""} href={usersHref(searchTerm, format)} key={format}>
-            {formatLabels[format]}
+          <Link className={selectedFormat === format.slug ? "active" : ""} href={usersHref(searchTerm, format.slug)} key={format.slug}>
+            {format.name}
           </Link>
         ))}
       </nav>
@@ -123,8 +118,8 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
           <div className="people-results-heading">
             <h2>
               {searchTerm
-                ? `Resultados para @${searchTerm}${selectedFormat ? ` en ${formatLabels[selectedFormat]}` : ""}`
-                : selectedFormat ? `Jugadores de ${formatLabels[selectedFormat]}` : "Jugadores de la comunidad"}
+                ? `Resultados para @${searchTerm}${selectedFormat ? ` en ${formatLabels.get(selectedFormat)}` : ""}`
+                : selectedFormat ? `Jugadores de ${formatLabels.get(selectedFormat)}` : "Jugadores de la comunidad"}
             </h2>
             <span>{profiles.length} {profiles.length === 1 ? "perfil" : "perfiles"}</span>
           </div>
@@ -141,7 +136,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
                   </Link>
                   <p>{profile.bio || "Este jugador todavía no ha escrito su biografía."}</p>
                   {profile.favorite_formats.length > 0 && (
-                    <div className="format-pills">{profile.favorite_formats.map((format) => <span key={format}>{format}</span>)}</div>
+                    <div className="format-pills">{profile.favorite_formats.map((format) => <span key={format}>{formatLabels.get(format) ?? format}</span>)}</div>
                   )}
                   <footer>
                     <span><strong>{profile.followers[0]?.count ?? 0}</strong> seguidores</span>

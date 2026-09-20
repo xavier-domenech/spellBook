@@ -2,7 +2,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Layers3 } from "lucide-react";
 import type { LibraryDeck } from "@/features/decks/library";
-import { formatInfo } from "@/features/decks/formats";
 
 export function DeckLibraryGrid({ decks }: { decks: LibraryDeck[] }) {
   return (
@@ -11,7 +10,7 @@ export function DeckLibraryGrid({ decks }: { decks: LibraryDeck[] }) {
         <Link className="deck-library-card" href={`/deck/${deck.id}`} key={deck.id}>
           <div className="deck-library-cover">
             {deck.cover_url ? <Image alt="" height={204} src={deck.cover_url} width={146} /> : <Layers3 aria-hidden="true" size={36} />}
-            <span>{formatInfo[deck.format].label}</span>
+            <span>{deck.format_name}</span>
           </div>
           <div className="deck-library-body">
             <div>

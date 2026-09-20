@@ -98,7 +98,7 @@ supabase/tests/          Pruebas de integración SQL
 tests/e2e/               Recorridos de navegador con Playwright
 ```
 
-Las decisiones iniciales de producto y arquitectura están recogidas en [ANALISIS_MAGIC_SOCIAL.md](./docs/ANALISIS_MAGIC_SOCIAL.md). El diseño de las integraciones de creadores está documentado en [ANALISIS_CREADORES.md](./docs/ANALISIS_CREADORES.md).
+Las decisiones iniciales de producto y arquitectura están recogidas en [ANALISIS_MAGIC_SOCIAL.md](./docs/ANALISIS_MAGIC_SOCIAL.md). El diseño de las integraciones de creadores está documentado en [ANALISIS_CREADORES.md](./docs/ANALISIS_CREADORES.md), y la propuesta para administrar formatos en [ANALISIS_ADMIN_FORMATOS.md](./docs/ANALISIS_ADMIN_FORMATOS.md).
 
 ## Calidad y seguridad
 

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { magicFormatSchema } from "@/features/social/schemas";
+import { formatSelectionSchema } from "@/features/formats/schemas";
 
 export const organizationKindSchema = z.enum(["league", "team", "club", "store", "community"]);
 export const organizationAccessSchema = z.enum(["public", "private"]);
@@ -25,7 +25,7 @@ export const organizationFormSchema = z.object({
   description: z.string().trim().max(1000),
   websiteUrl: optionalUrlSchema,
   location: z.string().trim().max(120),
-  formats: z.array(magicFormatSchema).max(4),
+  formats: formatSelectionSchema,
 });
 
 export const organizationSearchSchema = z.string().trim().max(80);

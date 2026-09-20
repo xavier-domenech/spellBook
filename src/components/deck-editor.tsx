@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Layers3, LoaderCircle, Save, WandSparkles } from "lucide-react";
 import { useState, useSyncExternalStore, type FormEvent } from "react";
 import { type DeckFormat, validateDeckSize } from "@/features/decks/validation";
+import type { MagicFormat } from "@/features/formats/types";
 
 type PreviewCard = {
   quantity: number;
@@ -53,7 +54,7 @@ const subscribeToHydration = () => () => {};
 const getClientSnapshot = () => true;
 const getServerSnapshot = () => false;
 
-export function DeckEditor({ initialFormat = "commander" }: { initialFormat?: DeckFormat }) {
+export function DeckEditor({ formats, initialFormat }: { formats: MagicFormat[]; initialFormat: DeckFormat }) {
   const router = useRouter();
   const [title, setTitle] = useState("Atraxa, voces del jardín");
   const [format, setFormat] = useState<DeckFormat>(initialFormat);
@@ -64,7 +65,8 @@ export function DeckEditor({ initialFormat = "commander" }: { initialFormat?: De
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const ready = useSyncExternalStore(subscribeToHydration, getClientSnapshot, getServerSnapshot);
-  const sizeValidation = preview ? validateDeckSize(format, preview.cards) : null;
+  const selectedFormat = formats.find((candidate) => candidate.slug === format) ?? null;
+  const sizeValidation = preview && selectedFormat ? validateDeckSize(selectedFormat, preview.cards) : null;
 
   async function previewDeck(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -124,10 +126,7 @@ export function DeckEditor({ initialFormat = "commander" }: { initialFormat?: De
           <div className="field">
             <label htmlFor="deck-format">Formato</label>
             <select className="select" disabled={!ready || loading || saving} id="deck-format" onChange={(event) => setFormat(event.target.value as DeckFormat)} value={format}>
-              <option value="commander">Commander</option>
-              <option value="standard">Standard</option>
-              <option value="modern">Modern</option>
-              <option value="pioneer">Pioneer</option>
+              {formats.map((candidate) => <option key={candidate.slug} value={candidate.slug}>{candidate.name}</option>)}
             </select>
           </div>
         </div>

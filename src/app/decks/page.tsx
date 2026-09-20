@@ -3,14 +3,15 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowRight, Layers3, Plus } from "lucide-react";
 import { DeckSectionNav } from "@/components/deck-section-nav";
-import { deckFormats } from "@/features/decks/validation";
-import { deckFormatSchema, firstParam, formatInfo } from "@/features/decks/formats";
+import { deckFormatSchema, firstParam } from "@/features/decks/formats";
+import { loadFormats } from "@/features/formats/data";
 
 export const metadata: Metadata = { title: "Decklists" };
 
 export default async function DecksPage({ searchParams }: { searchParams: Promise<{ format?: string | string[] }> }) {
-  const legacyFormat = deckFormatSchema.safeParse(firstParam((await searchParams).format));
-  if (legacyFormat.success) redirect(`/decks/${legacyFormat.data}`);
+  const [formats, query] = await Promise.all([loadFormats(), searchParams]);
+  const legacyFormat = deckFormatSchema.safeParse(firstParam(query.format));
+  if (legacyFormat.success && formats.some((format) => format.slug === legacyFormat.data)) redirect(`/decks/${legacyFormat.data}`);
 
   return (
     <main className="page-shell deck-page">
@@ -20,13 +21,13 @@ export default async function DecksPage({ searchParams }: { searchParams: Promis
       </header>
       <DeckSectionNav active="browse" />
       <div className="format-directory">
-        {deckFormats.map((format) => (
-          <Link className={`format-entry format-entry-${format}`} href={`/decks/${format}`} key={format}>
+        {formats.map((format) => (
+          <Link className={`format-entry format-entry-${format.slug}`} href={`/decks/${format.slug}`} key={format.slug}>
             <span className="feature-icon"><Layers3 size={24} /></span>
-            <h2>{formatInfo[format].label}</h2>
-            <p>{formatInfo[format].description}</p>
-            <small>{formatInfo[format].size}</small>
-            <strong>Entrar en {formatInfo[format].label} <ArrowRight size={17} /></strong>
+            <h2>{format.name}</h2>
+            <p>{format.description}</p>
+            <small>{format.rules_summary}</small>
+            <strong>Entrar en {format.name} <ArrowRight size={17} /></strong>
           </Link>
         ))}
       </div>

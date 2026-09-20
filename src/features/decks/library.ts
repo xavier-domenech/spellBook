@@ -5,6 +5,7 @@ export type LibraryDeck = {
   id: string;
   title: string;
   format: DeckFormat;
+  format_name: string;
   description: string;
   current_version: number;
   display_name: string;

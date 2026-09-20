@@ -1,16 +1,10 @@
-export const deckFormats = ["commander", "standard", "modern", "pioneer"] as const;
-export type DeckFormat = (typeof deckFormats)[number];
+import type { FormatRules } from "@/features/formats/types";
+
+export type DeckFormat = string;
 
 type CountableCard = {
   zone: string;
   quantity: number;
-};
-
-const formatLabels: Record<DeckFormat, string> = {
-  commander: "Commander",
-  standard: "Standard",
-  modern: "Modern",
-  pioneer: "Pioneer",
 };
 
 export type DeckSizeValidation = {
@@ -20,14 +14,20 @@ export type DeckSizeValidation = {
   message: string;
 };
 
-export function validateDeckSize(format: DeckFormat, cards: CountableCard[]): DeckSizeValidation {
-  const zones = format === "commander" ? new Set(["commander", "mainboard"]) : new Set(["mainboard"]);
-  const current = cards.reduce((total, card) => zones.has(card.zone) ? total + card.quantity : total, 0);
-  const required = format === "commander" ? 100 : 60;
-  const valid = format === "commander" ? current === required : current >= required;
-  const message = format === "commander"
-    ? `Commander necesita exactamente 100 cartas entre comandante y mazo principal. Ahora hay ${current}.`
-    : `${formatLabels[format]} necesita un mínimo de 60 cartas en el mazo principal. Ahora hay ${current}.`;
+export function validateDeckSize(rules: FormatRules, cards: CountableCard[]): DeckSizeValidation {
+  const mainboard = cards.reduce((total, card) => card.zone === "mainboard" ? total + card.quantity : total, 0);
+  const commanders = cards.reduce((total, card) => card.zone === "commander" ? total + card.quantity : total, 0);
+  const current = mainboard + commanders;
+  const mainboardValid = mainboard >= rules.mainboard_min && (rules.mainboard_max === null || mainboard <= rules.mainboard_max);
+  const commandersValid = commanders >= rules.commander_min && commanders <= rules.commander_max;
+  const totalValid = current >= rules.total_min && (rules.total_max === null || current <= rules.total_max);
+  const valid = mainboardValid && commandersValid && totalValid;
+  const required = rules.total_min;
+  const totalRule = rules.total_max === rules.total_min ? `exactamente ${rules.total_min}` : `un mínimo de ${rules.total_min}`;
+  const commanderRule = rules.commander_max > 0
+    ? ` y entre ${rules.commander_min} y ${rules.commander_max} comandantes`
+    : " y ninguna carta en la zona de comandante";
+  const message = `${rules.name} necesita ${totalRule} cartas${commanderRule}. Ahora hay ${current}.`;
 
   return { valid, current, required, message };
 }

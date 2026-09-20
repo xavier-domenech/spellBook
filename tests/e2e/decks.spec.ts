@@ -7,7 +7,9 @@ test("navigates from the format directory to a format and a deck", async ({ cont
   await page.goto("/decks");
 
   await expect(page.getByRole("heading", { name: "Cada formato, su mesa." })).toBeVisible();
-  await expect(page.locator(".format-entry")).toHaveCount(4);
+  for (const format of ["Commander", "Standard", "Modern", "Pioneer"]) {
+    await expect(page.getByRole("heading", { name: format, exact: true })).toBeVisible();
+  }
 
   await page.getByRole("link", { name: /Entrar en Modern/ }).click();
   await expect(page).toHaveURL(/\/decks\/modern$/);
