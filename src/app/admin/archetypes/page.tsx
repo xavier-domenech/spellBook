@@ -3,17 +3,21 @@ import { CheckCircle2, ExternalLink, Filter, Shapes } from "lucide-react";
 import { z } from "zod";
 import { loadAdminArchetypes } from "@/features/admin/archetypes";
 import { archetypeStatusSchema } from "@/features/admin/archetypes-schema";
-import { deckFormatSchema, firstParam, formatInfo } from "@/features/decks/formats";
+import { deckFormatSchema, firstParam } from "@/features/decks/formats";
+import { loadFormats } from "@/features/formats/data";
 import { updateArchetype } from "./actions";
 
 type Props = { searchParams: Promise<{ format?: string | string[]; status?: string | string[]; saved?: string | string[]; error?: string | string[] }> };
 
 export default async function AdminArchetypesPage({ searchParams }: Props) {
   const params = await searchParams;
-  const format = deckFormatSchema.optional().catch(undefined).parse(firstParam(params.format));
+  const requestedFormat = deckFormatSchema.optional().catch(undefined).parse(firstParam(params.format));
   const status = archetypeStatusSchema.optional().catch(undefined).parse(firstParam(params.status));
   const saved = z.string().uuid().optional().catch(undefined).parse(firstParam(params.saved));
   const error = z.string().max(300).optional().catch(undefined).parse(firstParam(params.error));
+  const formats = await loadFormats({ includeArchived: true });
+  const format = formats.some((candidate) => candidate.slug === requestedFormat) ? requestedFormat : undefined;
+  const formatNames = new Map(formats.map((candidate) => [candidate.slug, candidate.name]));
   const { archetypes, count } = await loadAdminArchetypes({ format, status });
 
   const filterHref = (nextFormat?: string, nextStatus?: string) => {
@@ -36,7 +40,7 @@ export default async function AdminArchetypesPage({ searchParams }: Props) {
       <div className="admin-filters">
         <span><Filter size={15} /> Formato</span>
         <Link className={!format ? "active" : ""} href={filterHref(undefined, status)}>Todos</Link>
-        {Object.entries(formatInfo).map(([key, info]) => <Link className={format === key ? "active" : ""} href={filterHref(key, status)} key={key}>{info.label}</Link>)}
+        {formats.map((candidate) => <Link className={format === candidate.slug ? "active" : ""} href={filterHref(candidate.slug, status)} key={candidate.slug}>{candidate.name}</Link>)}
         <span>Estado</span>
         <Link className={!status ? "active" : ""} href={filterHref(format, undefined)}>Todos</Link>
         <Link className={status === "provisional" ? "active" : ""} href={filterHref(format, "provisional")}>Provisionales</Link>
@@ -47,7 +51,7 @@ export default async function AdminArchetypesPage({ searchParams }: Props) {
         {archetypes.map((archetype) => (
           <article className={`admin-archetype-card ${saved === archetype.id ? "saved" : ""}`} key={archetype.id}>
             <header>
-              <div><span className={`admin-status admin-status-${archetype.status}`}>{archetype.status === "reviewed" ? "Revisado" : "Provisional"}</span><strong>{formatInfo[archetype.format].label} · {archetype.deck_count} listas</strong></div>
+              <div><span className={`admin-status admin-status-${archetype.status}`}>{archetype.status === "reviewed" ? "Revisado" : "Provisional"}</span><strong>{formatNames.get(archetype.format) ?? archetype.format} · {archetype.deck_count} listas</strong></div>
               <Link href={`/decks/${archetype.format}/archetypes/${archetype.slug}`} target="_blank">Ver público <ExternalLink size={14} /></Link>
             </header>
             <form action={updateArchetype} className="admin-archetype-form">

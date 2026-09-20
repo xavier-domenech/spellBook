@@ -3,8 +3,9 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, ArrowRight, Layers3, Plus } from "lucide-react";
 import { z } from "zod";
 import { DeckLibraryGrid, LibraryPagination } from "@/components/deck-library-grid";
-import { deckFormatSchema, firstParam, formatInfo, pageNumberSchema } from "@/features/decks/formats";
+import { deckFormatSchema, firstParam, pageNumberSchema } from "@/features/decks/formats";
 import { loadArchetypes, loadLibrary } from "@/features/decks/library";
+import { loadFormat } from "@/features/formats/data";
 import { hasSupabaseEnv } from "@/lib/env";
 
 type Props = { params: Promise<{ format: string }>; searchParams: Promise<{ page?: string | string[] }> };
@@ -15,7 +16,9 @@ export default async function FormatPage({ params, searchParams }: Props) {
   if (z.string().uuid().safeParse(rawFormat).success) redirect(`/deck/${rawFormat}`);
   const parsed = deckFormatSchema.safeParse(rawFormat);
   if (!parsed.success) notFound();
-  const format = parsed.data;
+  const formatInfo = await loadFormat(parsed.data, { includeArchived: true });
+  if (!formatInfo) notFound();
+  const format = formatInfo.slug;
   const page = pageNumberSchema.parse(firstParam((await searchParams).page));
   const configured = hasSupabaseEnv();
   const [groups, recent] = configured ? await Promise.all([loadArchetypes(format, page), loadLibrary(format)]) : [null, null];
@@ -24,12 +27,12 @@ export default async function FormatPage({ params, searchParams }: Props) {
     <main className="page-shell deck-page">
       <Link className="deck-back-link" href="/decks"><ArrowLeft size={15} /> Todos los formatos</Link>
       <header className="deck-section-header">
-        <div><p className="eyebrow">Decklists · {formatInfo[format].size}</p><h1 className="page-title">{formatInfo[format].label}</h1><p>{formatInfo[format].description}</p></div>
-        <Link className="button" href={`/decks/new?format=${format}`}><Plus size={17} /> Crear decklist</Link>
+        <div><p className="eyebrow">Decklists · {formatInfo.rules_summary}</p><h1 className="page-title">{formatInfo.name}</h1><p>{formatInfo.description}</p></div>
+        {formatInfo.is_active ? <Link className="button" href={`/decks/new?format=${format}`}><Plus size={17} /> Crear decklist</Link> : <span className="beta-pill">Formato archivado</span>}
       </header>
       {!configured && <p className="setup-notice">La biblioteca estará disponible al configurar la conexión de datos.</p>}
       <section className="deck-browser" aria-labelledby="archetypes-heading">
-        <div className="deck-browser-toolbar"><div><h2 id="archetypes-heading">Arquetipos de {formatInfo[format].label}</h2><p>Listas afines, agrupadas por su composición.</p></div><Link className="deck-text-link" href={`/decks/${format}/lists`}>Todas las listas <ArrowRight size={15} /></Link></div>
+        <div className="deck-browser-toolbar"><div><h2 id="archetypes-heading">Arquetipos de {formatInfo.name}</h2><p>Listas afines, agrupadas por su composición.</p></div><Link className="deck-text-link" href={`/decks/${format}/lists`}>Todas las listas <ArrowRight size={15} /></Link></div>
         {groups?.error && <p className="form-message" role="alert">No se pudieron cargar los arquetipos. Vuelve a intentarlo.</p>}
         <div className="archetype-grid">
           {groups?.archetypes.map((group) => (

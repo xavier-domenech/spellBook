@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CheckCircle2, ExternalLink, Radio, Save, Unplug, Video } from "lucide-react";
 import { redirect } from "next/navigation";
 import { disconnectCreatorChannel, setCreatorAutoPublish } from "@/features/creators/actions";
+import { loadFormats } from "@/features/formats/data";
 import { updateProfile } from "@/features/social/actions";
 import { hasSupabaseEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
@@ -11,7 +12,6 @@ export const metadata: Metadata = { title: "Editar perfil" };
 
 type SettingsPageProps = { searchParams: Promise<{ error?: string; creatorError?: string; creatorConnected?: string }> };
 type CreatorChannel = { id: string; platform: "youtube" | "twitch"; channel_name: string; channel_url: string; verified_at: string; auto_publish: boolean };
-const formats = ["commander", "standard", "modern", "pioneer"] as const;
 
 export default async function ProfileSettingsPage({ searchParams }: SettingsPageProps) {
   if (!hasSupabaseEnv()) redirect("/auth");
@@ -19,6 +19,7 @@ export default async function ProfileSettingsPage({ searchParams }: SettingsPage
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth");
+  const formats = await loadFormats();
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -46,7 +47,7 @@ export default async function ProfileSettingsPage({ searchParams }: SettingsPage
           <div className="field"><label htmlFor="displayName">Nombre visible</label><input className="input" defaultValue={profile.display_name} id="displayName" maxLength={60} name="displayName" required /></div>
           <div className="field"><label htmlFor="handle">Usuario</label><div className="input-prefix"><span>@</span><input defaultValue={profile.handle} id="handle" maxLength={30} minLength={3} name="handle" pattern="[a-zA-Z0-9_]+" required /></div></div>
           <div className="field"><label htmlFor="bio">Biografía</label><textarea className="textarea textarea-short" defaultValue={profile.bio} id="bio" maxLength={300} name="bio" placeholder="Cuéntanos qué formatos juegas…" /></div>
-          <fieldset className="format-fieldset"><legend>Formatos favoritos</legend><div className="format-options">{formats.map((format) => <label key={format}><input defaultChecked={profile.favorite_formats.includes(format)} name="favoriteFormats" type="checkbox" value={format} /><span>{format}</span></label>)}</div></fieldset>
+          <fieldset className="format-fieldset"><legend>Formatos favoritos</legend><div className="format-options">{formats.map((format) => <label key={format.slug}><input defaultChecked={profile.favorite_formats.includes(format.slug)} name="favoriteFormats" type="checkbox" value={format.slug} /><span>{format.name}</span></label>)}</div></fieldset>
           <button className="button" type="submit"><Save size={17} /> Guardar cambios</button>
         </form>
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Building2, Save } from "lucide-react";
 import { redirect } from "next/navigation";
+import { loadFormats } from "@/features/formats/data";
 import { createOrganization } from "@/features/organizations/actions";
 import { organizationKindLabels } from "@/features/organizations/data";
 import { organizationKindSchema } from "@/features/organizations/schemas";
@@ -9,13 +10,13 @@ import { hasSupabaseEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Crear organización" };
-const formats = ["commander", "standard", "modern", "pioneer"] as const;
 
 export default async function NewOrganizationPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   if (!hasSupabaseEnv()) redirect("/auth");
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth");
+  const formats = await loadFormats();
   const { error } = await searchParams;
 
   return (
@@ -37,7 +38,7 @@ export default async function NewOrganizationPage({ searchParams }: { searchPara
             <div className="field"><label htmlFor="location">Ubicación</label><input className="input" id="location" maxLength={120} name="location" placeholder="Barcelona o comunidad online" /></div>
             <div className="field"><label htmlFor="websiteUrl">Sitio web</label><input className="input" id="websiteUrl" maxLength={500} name="websiteUrl" placeholder="https://..." type="url" /></div>
           </div>
-          <fieldset className="format-fieldset"><legend>Formatos relacionados</legend><div className="format-options">{formats.map((format) => <label key={format}><input name="formats" type="checkbox" value={format} /><span>{format}</span></label>)}</div></fieldset>
+          <fieldset className="format-fieldset"><legend>Formatos relacionados</legend><div className="format-options">{formats.map((format) => <label key={format.slug}><input name="formats" type="checkbox" value={format.slug} /><span>{format.name}</span></label>)}</div></fieldset>
           <div className="form-actions"><Link className="button button-secondary" href="/organizations">Cancelar</Link><button className="button" type="submit"><Save size={17} /> Crear organización</button></div>
         </form>
       </section>

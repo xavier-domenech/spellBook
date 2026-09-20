@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { deckFormats, validateDeckSize } from "@/features/decks/validation";
+import { validateDeckSize } from "@/features/decks/validation";
+import { formatSlugSchema } from "@/features/formats/schemas";
+import type { FormatRules } from "@/features/formats/types";
 import { createClient } from "@/lib/supabase/server";
 
 const imageUrl = z.string().url().refine(
@@ -10,7 +12,7 @@ const imageUrl = z.string().url().refine(
 
 const deckSchema = z.object({
   title: z.string().trim().min(1).max(100),
-  format: z.enum(deckFormats),
+  format: formatSlugSchema,
   visibility: z.enum(["public", "unlisted", "private"]),
   cards: z.array(z.object({
     zone: z.enum(["commander", "mainboard", "sideboard", "maybeboard"]),
@@ -29,12 +31,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Los datos del mazo no son válidos." }, { status: 400 });
   }
 
-  const sizeValidation = validateDeckSize(body.data.format, body.data.cards);
+  const supabase = await createClient();
+  const { data: formatData, error: formatError } = await supabase.from("formats")
+    .select("name, mainboard_min, mainboard_max, commander_min, commander_max, total_min, total_max")
+    .eq("slug", body.data.format).eq("is_active", true).maybeSingle();
+  if (formatError) return NextResponse.json({ error: "No se pudo validar el formato." }, { status: 500 });
+  if (!formatData) return NextResponse.json({ error: "El formato no existe o está archivado." }, { status: 400 });
+
+  const sizeValidation = validateDeckSize(formatData as FormatRules, body.data.cards);
   if (!sizeValidation.valid) {
     return NextResponse.json({ error: sizeValidation.message }, { status: 400 });
   }
 
-  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Inicia sesión para guardar el mazo." }, { status: 401 });
 

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LayoutDashboard, Shapes } from "lucide-react";
+import { BookOpen, LayoutDashboard, Shapes } from "lucide-react";
 import { requireAdminAccess } from "@/features/admin/auth";
 
 export const metadata: Metadata = { title: "Administración" };
@@ -15,6 +15,7 @@ export default async function AdminLayout({ children }: Readonly<{ children: Rea
       </header>
       <nav aria-label="Secciones de administración" className="admin-nav">
         <Link href="/admin"><LayoutDashboard size={16} /> Resumen</Link>
+        <Link href="/admin/formats"><BookOpen size={16} /> Formatos</Link>
         <Link href="/admin/archetypes"><Shapes size={16} /> Arquetipos</Link>
       </nav>
       {children}

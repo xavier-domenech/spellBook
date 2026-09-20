@@ -5,7 +5,8 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 import { DeckExportMenu } from "@/components/deck-export-menu";
 import { loadDeckDetail } from "@/features/decks/detail";
-import { firstParam, deckFormatSchema, formatInfo } from "@/features/decks/formats";
+import { firstParam } from "@/features/decks/formats";
+import { loadFormat } from "@/features/formats/data";
 import { hasSupabaseEnv } from "@/lib/env";
 
 export const metadata: Metadata = { title: "Decklist" };
@@ -19,13 +20,14 @@ export default async function DeckPage({ params, searchParams }: Props) {
   const details = await loadDeckDetail(id.data, versionId.data);
   if (!details) notFound();
   const { deck, cards } = details;
-  const format = deckFormatSchema.parse(deck.format);
+  const format = await loadFormat(deck.format, { includeArchived: true });
+  if (!format) notFound();
 
   return (
     <main className="page-shell deck-page">
-      <Link className="deck-back-link" href={`/decks/${format}`}>← Volver a {formatInfo[format].label}</Link>
+      <Link className="deck-back-link" href={`/decks/${format.slug}`}>← Volver a {format.name}</Link>
       <div className="deck-intro">
-        <div><p className="eyebrow">{formatInfo[format].label} · {deck.totalCards} cartas · versión {deck.currentVersion}</p><h1 className="page-title">{deck.title}</h1><p>Por {deck.owner?.displayName ?? "Mago"} · @{deck.owner?.handle ?? "sin_handle"}</p>{deck.description && <p>{deck.description}</p>}</div>
+        <div><p className="eyebrow">{format.name} · {deck.totalCards} cartas · versión {deck.currentVersion}</p><h1 className="page-title">{deck.title}</h1><p>Por {deck.owner?.displayName ?? "Mago"} · @{deck.owner?.handle ?? "sin_handle"}</p>{deck.description && <p>{deck.description}</p>}</div>
         <DeckExportMenu cards={cards.map(({ zone, quantity, name }) => ({ zone, quantity, name }))} title={deck.title} />
       </div>
       <section className="deck-preview">

@@ -422,6 +422,27 @@ button { cursor: pointer; }
 .admin-archetype-form .field small { color: var(--muted); font-size: .64rem; line-height: 1.35; }
 .admin-description-field { grid-column: 1 / -1; }
 .admin-archetype-form .textarea-short { min-height: 84px; }
+.admin-format-create { padding: 0; margin-bottom: 18px; border: 1px solid var(--line); border-radius: 15px; background: rgb(252 250 244 / 92%); }
+.admin-format-create summary { display: flex; align-items: center; gap: 8px; padding: 15px 18px; color: var(--green); cursor: pointer; font-size: .82rem; font-weight: 800; }
+.admin-format-create[open] summary { border-bottom: 1px solid var(--line); }
+.admin-format-create .admin-format-form { padding: 18px; }
+.admin-format-list { display: grid; gap: 16px; }
+.admin-format-card { padding: 20px; border: 1px solid var(--line); border-radius: 15px; background: rgb(252 250 244 / 92%); }
+.admin-format-card.saved { border-color: rgb(40 91 69 / 48%); box-shadow: 0 0 0 3px rgb(40 91 69 / 8%); }
+.admin-format-card > header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.admin-format-card > header div { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; }
+.admin-format-card h3 { margin: 0; font: 700 1.25rem Georgia, serif; }
+.admin-format-card code { padding: 4px 7px; border-radius: 7px; color: var(--muted); background: rgb(40 91 69 / 7%); font-size: .68rem; }
+.admin-format-card > header > span { color: var(--muted); font-size: .72rem; font-weight: 750; }
+.admin-format-form { display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)); gap: 12px; align-items: end; }
+.admin-format-form .field { margin: 0; }
+.admin-format-wide { grid-column: 1 / -1; }
+.admin-format-checkbox { display: flex; align-items: center; gap: 7px; min-height: 45px; color: var(--muted); font-size: .75rem; font-weight: 750; }
+.admin-format-card > footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding-top: 16px; margin-top: 18px; border-top: 1px solid var(--line); }
+.admin-format-usage, .admin-format-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.admin-format-usage span { padding: 5px 8px; border-radius: 999px; color: var(--muted); background: rgb(40 91 69 / 7%); font-size: .66rem; font-weight: 750; }
+.admin-format-actions form { margin: 0; }
+.admin-format-actions button:disabled { cursor: not-allowed; opacity: .48; }
 
 .creator-section { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); }
 .creator-section h2 { margin: 0; font: 700 1.2rem Georgia, serif; }
@@ -560,6 +581,8 @@ button { cursor: pointer; }
   .profile-grid { grid-template-columns: 1fr; }
   .admin-archetype-form { grid-template-columns: 1fr 1fr; }
   .admin-description-field { grid-column: 1 / -1; }
+  .admin-format-form { grid-template-columns: 1fr 1fr; }
+  .admin-format-wide { grid-column: 1 / -1; }
   .organization-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .organization-filters { grid-template-columns: minmax(220px, 1fr) 170px 170px; }
   .organization-filters .button { grid-column: 1 / -1; }
@@ -586,6 +609,10 @@ button { cursor: pointer; }
   .admin-archetype-form { grid-template-columns: 1fr; }
   .admin-description-field { grid-column: auto; }
   .admin-archetype-form .button { width: 100%; }
+  .admin-format-form { grid-template-columns: 1fr; }
+  .admin-format-wide { grid-column: auto; }
+  .admin-format-card > header, .admin-format-card > footer { align-items: flex-start; flex-direction: column; }
+  .admin-format-actions { width: 100%; }
   .hero h1 { font-size: clamp(2.8rem, 15vw, 4.6rem); }
   .hero-card { min-height: 390px; }
   .sample-post { right: 0; }
