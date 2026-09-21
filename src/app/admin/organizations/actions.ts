@@ -112,4 +112,3 @@ export async function deleteEmptyOrganization(formData: FormData) {
   revalidateOrganizations(parsed.data.slug);
   redirect(organizationsUrl({ deleted: parsed.data.slug }));
 }
-

@@ -19,4 +19,3 @@ describe("admin organization schemas", () => {
     expect(adminOrganizationActionSchema.safeParse({ organizationId: "bad", slug: "liga" }).success).toBe(false);
   });
 });
-

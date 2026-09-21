@@ -25,4 +25,3 @@ export const adminOrganizationActionSchema = z.object({
 });
 
 export { organizationAccessSchema, organizationKindSchema };
-
