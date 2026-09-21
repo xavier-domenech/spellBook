@@ -483,6 +483,33 @@ button { cursor: pointer; }
 .admin-organization-actions, .admin-organization-actions form { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin: 0; }
 .admin-organization-actions .select { width: 125px; height: 36px; font-size: .68rem; }
 .admin-organization-actions .input { width: 140px; height: 36px; font-size: .68rem; }
+.admin-deck-create .admin-deck-editor { padding: 18px; }
+.admin-deck-filters { display: grid; grid-template-columns: minmax(250px, 1fr) 180px 180px auto; gap: 10px; margin-bottom: 18px; }
+.admin-deck-list { display: grid; gap: 16px; }
+.admin-deck-card { padding: 20px; border: 1px solid var(--line); border-radius: 15px; background: rgb(252 250 244 / 92%); }
+.admin-deck-card > header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.admin-deck-card > header > div:first-child { display: flex; align-items: center; gap: 10px; }
+.admin-deck-card h3 { margin: 0 0 3px; font: 700 1.2rem Georgia, serif; }
+.admin-deck-card header p { margin: 0; color: var(--muted); font-size: .7rem; }
+.admin-deck-card header a { display: inline-grid; place-items: center; color: var(--green); }
+.admin-deck-metadata-form { display: grid; grid-template-columns: minmax(180px, 1fr) 150px minmax(260px, 1.6fr) auto; gap: 12px; align-items: end; }
+.admin-deck-metadata-form .field { margin: 0; }
+.admin-deck-metadata-form .textarea-short { min-height: 45px; height: 45px; resize: vertical; }
+.admin-deck-version { margin-top: 15px; border: 1px solid var(--line); border-radius: 11px; background: #fff; }
+.admin-deck-version summary { padding: 11px 13px; color: var(--green); cursor: pointer; font-size: .72rem; font-weight: 800; }
+.admin-deck-version[open] summary { border-bottom: 1px solid var(--line); }
+.admin-deck-editor { display: grid; grid-template-columns: repeat(4, minmax(130px, 1fr)); gap: 12px; padding: 14px; align-items: end; }
+.admin-deck-editor .field { margin: 0; }
+.admin-deck-editor-wide { grid-column: 1 / -1; }
+.admin-deck-editor .textarea { min-height: 130px; }
+.admin-deck-preview { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; padding: 10px 12px; border-radius: 9px; font-size: .72rem; font-weight: 700; }
+.admin-deck-preview.valid { color: var(--green); background: rgb(40 91 69 / 9%); }
+.admin-deck-preview.invalid { color: #8a3f38; background: rgb(138 63 56 / 9%); }
+.admin-deck-preview small { flex-basis: 100%; font-weight: 500; }
+.admin-deck-card > footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 16px; margin-top: 18px; border-top: 1px solid var(--line); }
+.admin-deck-actions, .admin-deck-actions form { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin: 0; }
+.admin-deck-actions .select { width: 125px; height: 36px; font-size: .68rem; }
+.admin-deck-actions .input { width: 140px; height: 36px; font-size: .68rem; }
 
 .creator-section { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); }
 .creator-section h2 { margin: 0; font: 700 1.2rem Georgia, serif; }
@@ -627,6 +654,8 @@ button { cursor: pointer; }
   .admin-organization-form { grid-template-columns: 1fr 1fr; }
   .admin-organization-description { grid-column: 1 / -1; }
   .admin-organization-filters { grid-template-columns: 1fr 1fr; }
+  .admin-deck-filters, .admin-deck-editor, .admin-deck-metadata-form { grid-template-columns: 1fr 1fr; }
+  .admin-deck-description, .admin-deck-editor-wide { grid-column: 1 / -1; }
   .admin-format-wide { grid-column: 1 / -1; }
   .organization-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .organization-filters { grid-template-columns: minmax(220px, 1fr) 170px 170px; }
@@ -665,6 +694,10 @@ button { cursor: pointer; }
   .admin-organization-description { grid-column: auto; }
   .admin-organization-card > header, .admin-organization-card > footer { align-items: flex-start; flex-direction: column; }
   .admin-organization-actions { align-items: stretch; flex-direction: column; width: 100%; }
+  .admin-deck-filters, .admin-deck-editor, .admin-deck-metadata-form { grid-template-columns: 1fr; }
+  .admin-deck-description, .admin-deck-editor-wide { grid-column: auto; }
+  .admin-deck-card > header, .admin-deck-card > footer { align-items: flex-start; flex-direction: column; }
+  .admin-deck-actions { align-items: stretch; flex-direction: column; width: 100%; }
   .admin-format-actions { width: 100%; }
   .hero h1 { font-size: clamp(2.8rem, 15vw, 4.6rem); }
   .hero-card { min-height: 390px; }
