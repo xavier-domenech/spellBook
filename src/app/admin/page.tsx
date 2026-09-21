@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, Shapes } from "lucide-react";
+import { ArrowRight, BookOpen, Shapes, Users } from "lucide-react";
 import { loadAdminArchetypes } from "@/features/admin/archetypes";
 import { loadAdminFormats } from "@/features/admin/formats";
 
@@ -18,6 +18,11 @@ export default async function AdminPage() {
         <Link className="admin-module-card" href="/admin/archetypes">
           <span className="feature-icon"><Shapes size={20} /></span>
           <div><h3>Arquetipos</h3><p>Revisa nombres, URLs, descripciones y estado editorial.</p><small>{count} arquetipos publicados</small></div>
+          <ArrowRight size={18} />
+        </Link>
+        <Link className="admin-module-card" href="/admin/users">
+          <span className="feature-icon"><Users size={20} /></span>
+          <div><h3>Usuarios</h3><p>Gestiona perfiles, roles de plataforma y acceso a las cuentas.</p><small>Identidad y moderación</small></div>
           <ArrowRight size={18} />
         </Link>
       </div>

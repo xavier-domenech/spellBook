@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BookOpen, LayoutDashboard, Shapes } from "lucide-react";
+import { BookOpen, LayoutDashboard, Shapes, Users } from "lucide-react";
 import { requireAdminAccess } from "@/features/admin/auth";
 
 export const metadata: Metadata = { title: "Administración" };
@@ -17,6 +17,7 @@ export default async function AdminLayout({ children }: Readonly<{ children: Rea
         <Link href="/admin"><LayoutDashboard size={16} /> Resumen</Link>
         <Link href="/admin/formats"><BookOpen size={16} /> Formatos</Link>
         <Link href="/admin/archetypes"><Shapes size={16} /> Arquetipos</Link>
+        <Link href="/admin/users"><Users size={16} /> Usuarios</Link>
       </nav>
       {children}
     </main>
