@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, Shapes, Users } from "lucide-react";
+import { ArrowRight, BookOpen, Building2, Layers3, Shapes, Users } from "lucide-react";
 import { loadAdminArchetypes } from "@/features/admin/archetypes";
 import { loadAdminFormats } from "@/features/admin/formats";
 
@@ -23,6 +23,16 @@ export default async function AdminPage() {
         <Link className="admin-module-card" href="/admin/users">
           <span className="feature-icon"><Users size={20} /></span>
           <div><h3>Usuarios</h3><p>Gestiona perfiles, roles de plataforma y acceso a las cuentas.</p><small>Identidad y moderación</small></div>
+          <ArrowRight size={18} />
+        </Link>
+        <Link className="admin-module-card" href="/admin/organizations">
+          <span className="feature-icon"><Building2 size={20} /></span>
+          <div><h3>Organizaciones</h3><p>Supervisa propietarios, configuración, actividad y archivo.</p><small>Gestión de plataforma</small></div>
+          <ArrowRight size={18} />
+        </Link>
+        <Link className="admin-module-card" href="/admin/decklists">
+          <span className="feature-icon"><Layers3 size={20} /></span>
+          <div><h3>Decklists</h3><p>Versiona, transfiere, modera y archiva las listas de la comunidad.</p><small>Historial inmutable</small></div>
           <ArrowRight size={18} />
         </Link>
       </div>
